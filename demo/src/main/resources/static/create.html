@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>게시글 작성 & 조회 (2컬럼 레이아웃)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 2em auto;
+            padding: 0 1em;
+        }
+        h1 {
+            text-align: center;
+        }
+
+        /* 컨테이너: 좌우 2컬럼 배치 */
+        .container {
+            display: flex;
+            gap: 2em;           /* 컬럼 간 간격 */
+        }
+        .column {
+            flex: 1;            /* 두 컬럼 동일 너비 */
+            min-width: 300px;   /* 최소 너비 */
+            box-sizing: border-box;
+            padding: 1em;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        /* 폼 스타일 */
+        form label {
+            display: block;
+            margin-top: 1em;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 0.5em;
+            box-sizing: border-box;
+            margin-top: 0.5em;
+        }
+        button {
+            margin-top: 1em;
+            padding: 0.5em 1em;
+        }
+
+        /* 결과 및 목록 스타일 */
+        #result {
+            margin-top: 1em;
+            font-weight: bold;
+        }
+        #list ul {
+            list-style: none;
+            padding: 0;
+        }
+        #list li {
+            border-bottom: 1px solid #ccc;
+            padding: 0.5em 0;
+        }
+    </style>
+</head>
+<body>
+<h1>게시글 작성 & 조회</h1>
+
+<div class="container">
+    <!-- 왼쪽 컬럼: 글 작성 -->
+    <div class="column">
+        <h2>글 작성</h2>
+        <form id="postForm">
+            <label>
+                제목:
+                <input type="text" id="title" required />
+            </label>
+            <label>
+                내용:
+                <textarea id="content" rows="5" required></textarea>
+            </label>
+            <button type="submit">등록하기</button>
+        </form>
+        <div id="result"></div>
+    </div>
+
+    <!-- 오른쪽 컬럼: 글 조회 -->
+    <div class="column">
+        <h2>글 조회</h2>
+        <button id="loadPostsBtn">게시글 불러오기</button>
+        <div id="list"></div>
+    </div>
+</div>
+
+<script>
+    // POST /posts
+    document.getElementById('postForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const title = document.getElementById('title').value.trim();
+        const content = document.getElementById('content').value.trim();
+        if (!title || !content) return;
+
+        try {
+            const res = await fetch('/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content })
+            });
+            if (res.ok) {
+                document.getElementById('result').innerText = '✅ 게시글이 등록되었습니다!';
+                e.target.reset();
+            } else {
+                document.getElementById('result').innerText = '❌ 등록 실패: ' + await res.text();
+            }
+        } catch (err) {
+            document.getElementById('result').innerText = '⚠️ 오류 발생: ' + err.message;
+        }
+    });
+
+    // GET /posts
+    document.getElementById('loadPostsBtn').addEventListener('click', async () => {
+        try {
+            const res = await fetch('/posts');
+            if (!res.ok) throw new Error(res.status + ' ' + res.statusText);
+            const posts = await res.json();
+            const listDiv = document.getElementById('list');
+            if (!posts.length) {
+                listDiv.innerHTML = '<p>등록된 게시글이 없습니다.</p>';
+                return;
+            }
+            const ul = document.createElement('ul');
+            posts.forEach(p => {
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${p.title}</strong><br>${p.content}`;
+                ul.appendChild(li);
+            });
+            listDiv.innerHTML = '';
+            listDiv.appendChild(ul);
+        } catch (err) {
+            document.getElementById('list').innerText = '목록 로드 실패: ' + err.message;
+        }
+    });
+</script>
+</body>
+</html>
